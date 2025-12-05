@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Advanced Vending Machine – DFA Simulation</title>
+    <style>
+        :root {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+                sans-serif;
+            background-color: #0f172a;
+            color: #0f172a;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 32px 16px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .app {
+            width: 100%;
+            max-width: 1000px;
+            background: #f9fafb;
+            border-radius: 16px;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.35);
+            padding: 24px 28px 30px;
+        }
+
+        /* Header */
+
+        .app-header {
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .app-title {
+            margin: 0;
+            font-size: 26px;
+            letter-spacing: 0.03em;
+        }
+
+        .app-subtitle {
+            margin-top: 4px;
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid #e5e7eb;
+            margin: 16px 0 18px;
+        }
+
+        /* Layout */
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1.1fr 1.1fr;
+            gap: 18px;
+            margin-bottom: 18px;
+        }
+
+        @media (max-width: 800px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 14px 16px 16px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .card-title {
+            margin: 0 0 10px;
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .chip {
+            padding: 2px 8px;
+            border-radius: 999px;
+            border: 1px solid #d1d5db;
+            font-size: 11px;
+            color: #6b7280;
+        }
+
+        /* State panel */
+
+        .state-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 15px;
+            font-weight: 600;
+            color: #f9fafb;
+            background: #111827;
+            margin-bottom: 6px;
+        }
+
+        .state-pill span {
+            font-size: 11px;
+            font-weight: 500;
+            opacity: 0.8;
+            margin-right: 6px;
+            text-transform: uppercase;
+        }
+
+        .meta-line {
+            margin: 2px 0;
+            font-size: 14px;
+        }
+
+        .meta-label {
+            font-weight: 600;
+            color: #4b5563;
+        }
+
+        .meta-value {
+            color: #111827;
+        }
+
+        .hint {
+            margin-top: 6px;
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        /* Moore output box */
+
+        .moore-label {
+            margin-top: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #4b5563;
+        }
+
+        .moore-box {
+            margin-top: 4px;
+            padding: 10px 14px;
+            background: #e0e7ff;
+            border-radius: 10px;
+            font-weight: 600;
+            color: #1e3a8a;
+            font-size: 13px;
+        }
+
+        /* Controls */
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .field-label {
+            font-size: 13px;
+            margin-bottom: 4px;
+            font-weight: 600;
+            color: #4b5563;
+        }
+
+        select {
+            width: 100%;
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+            font-size: 14px;
+            background: #f9fafb;
+        }
+
+        button {
+            padding: 8px 10px;
+            border-radius: 999px;
+            border: none;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            background: #2563eb;
+            color: #f9fafb;
+            transition: transform 0.05s ease, box-shadow 0.05s ease,
+                opacity 0.08s ease;
+            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35);
+        }
+
+        button span.key {
+            font-size: 11px;
+            padding: 2px 7px;
+            border-radius: 999px;
+            border: 1px solid rgba(248, 250, 252, 0.65);
+            background: rgba(15, 23, 42, 0.2);
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.4);
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(0);
+            box-shadow: 0 2px 5px rgba(37, 99, 235, 0.35);
+        }
+
+        button:disabled {
+            background: #9ca3af;
+            box-shadow: none;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        /* Log */
+
+        #log {
+            height: 210px;
+            border-radius: 10px;
+            background: #020617;
+            color: #e5e7eb;
+            font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo,
+                Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 12px;
+            padding: 6px 8px;
+            overflow-y: auto;
+            white-space: pre-line;
+        }
+
+        /* DFA info */
+
+        .badge-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 4px;
+        }
+
+        .badge {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 999px;
+            background: #e5e7eb;
+            color: #111827;
+        }
+
+        .definition {
+            font-size: 13px;
+            color: #4b5563;
+        }
+
+        .definition code {
+            background: #e5e7eb;
+            padding: 1px 4px;
+            border-radius: 4px;
+        }
+
+        /* Product gallery */
+
+        .product-gallery {
+            display: flex;
+            gap: 14px;
+            margin-bottom: 6px;
+        }
+
+        .product-card {
+            width: 95px;
+            background: #ffffff;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            padding: 6px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.1s ease, box-shadow 0.1s ease,
+                border-color 0.1s ease;
+        }
+
+        .product-card img {
+            width: 100%;
+            height: 70px;
+            object-fit: cover;
+            border-radius: 6px;
+            margin-bottom: 4px;
+        }
+
+        .product-card span {
+            font-size: 11px;
+            color: #111827;
+        }
+
+        .product-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .product-card.selected {
+            border: 2px solid #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <!-- Header -->
+    <header class="app-header">
+        <h1 class="app-title">Advanced Vending Machine</h1>
+        <div class="app-subtitle">
+            Deterministic Finite Automaton (DFA) – Working Code Implementation
+        </div>
+    </header>
+
+    <hr />
+
+    <!-- Top row: current state + controls -->
+    <div class="grid">
+        <!-- Current State Panel -->
+        <section class="card">
+            <h2 class="card-title">
+                Current State
+                <span class="chip">Runtime view</span>
+            </h2>
+
+            <div id="statePill" class="state-pill">
+                <span>STATE</span>
+                <strong id="currentState">Idle</strong>
+            </div>
+
+            <p class="meta-line">
+                <span class="meta-label">Last input:</span>
+                <span class="meta-value" id="lastInput">–</span>
+            </p>
+            <p class="meta-line">
+                <span class="meta-label">Selected product:</span>
+                <span class="meta-value" id="selectedProduct">None</span>
+            </p>
+            <p class="meta-line">
+                <span class="meta-label">Price:</span>
+                <span class="meta-value">
+                    $<span id="selectedPrice">0.00</span>
+                </span>
+            </p>
+
+            <p class="hint">
+                Follow the sequence:
+                <strong>Scan QR → Select product → Pay → Dispense → Finish</strong>.  
+                Any invalid action moves the automaton to <code>ErrorState</code>.
+            </p>
+
+            <!-- Moore-style output -->
+            <p class="moore-label">Moore-style output (depends only on state)</p>
+            <div id="mooreOutput" class="moore-box">
+                Waiting for QR Scan
+            </div>
+            <p class="hint">
+                This message is a <strong>Moore Machine</strong> style output:  
+                it changes only when the machine enters a new state.
+            </p>
+        </section>
+
+        <!-- Controls Panel -->
+        <section class="card">
+            <h2 class="card-title">
+                Controls
+                <span class="chip">User interaction</span>
+            </h2>
+
+            <div class="controls">
+                <div>
+                    <div class="field-label">Products</div>
+
+                    <!-- Product gallery -->
+                    <div class="product-gallery">
+                        <div class="product-card" data-value="Juice|2.50">
+                            <img src="images/juice.jpg" alt="Juice" />
+                            <span>Juice — $2.50</span>
+                        </div>
+
+                        <div class="product-card" data-value="Chips|1.50">
+                            <img src="images/chips.jpg" alt="Chips" />
+                            <span>Chips — $1.50</span>
+                        </div>
+
+                        <div class="product-card" data-value="Chocolate|3.00">
+                            <img src="images/chocolate.jpg" alt="Chocolate" />
+                            <span>Chocolate — $3.00</span>
+                        </div>
+                    </div>
+
+                    <!-- Optional dropdown (synced with gallery) -->
+                    <select id="productSelect" disabled>
+                        <option value="">-- Or choose from this list --</option>
+                        <option value="Juice|2.50">Juice – $2.50</option>
+                        <option value="Chips|1.50">Chips – $1.50</option>
+                        <option value="Chocolate|3.00">Chocolate – $3.00</option>
+                    </select>
+                </div>
+
+                <div class="button-group">
+                    <button id="btnScanQR">
+                        Scan QR
+                        <span class="key">q</span>
+                    </button>
+                    <button id="btnSelectProduct">
+                        Confirm product
+                        <span class="key">s</span>
+                    </button>
+                    <button id="btnPay">
+                        Process payment
+                        <span class="key">p</span>
+                    </button>
+                    <button id="btnDispense">
+                        Dispense item
+                        <span class="key">d</span>
+                    </button>
+                    <button id="btnFinish">
+                        Finish / reset
+                        <span class="key">e</span>
+                    </button>
+                    <button id="btnClearLog">
+                        Clear log
+                    </button>
+                </div>
+
+                <p class="hint">
+                    Buttons are enabled only when the transition is valid from the
+                    current state.  
+                    This makes the DFA behavior explicit for the report &amp; demo.
+                </p>
+            </div>
+        </section>
+    </div>
+
+    <!-- Bottom row: log + DFA description -->
+    <div class="grid">
+        <!-- Log -->
+        <section class="card">
+            <h2 class="card-title">
+                State transition log
+                <span class="chip">Execution trace</span>
+            </h2>
+            <div id="log"></div>
+        </section>
+
+        <!-- DFA Info -->
+        <section class="card">
+            <h2 class="card-title">
+                DFA definition (informal)
+                <span class="chip">Theory link</span>
+            </h2>
+
+            <p class="definition">
+                States:
+            </p>
+            <div class="badge-row">
+                <span class="badge">Idle</span>
+                <span class="badge">QRScanned</span>
+                <span class="badge">ProductSelected</span>
+                <span class="badge">PaymentProcessing</span>
+                <span class="badge">DispensingItem</span>
+                <span class="badge">Completed</span>
+                <span class="badge">ErrorState</span>
+            </div>
+
+            <p class="definition">
+                Alphabet:
+                <code>Σ = { q, s, p, d, e }</code>
+            </p>
+            <p class="definition">
+                Start state:
+                <code>Idle</code> &nbsp;&nbsp; Final state:
+                <code>Completed</code>
+            </p>
+            <p class="definition">
+                Transition function
+                <code>δ : Q × Σ → Q</code>
+                is implemented using the State Design Pattern in JavaScript.  
+                Invalid transitions go to <code>ErrorState</code>, which can
+                return to <code>Idle</code> using input <code>e</code>.
+            </p>
+        </section>
+    </div>
+</div>
+
+<script>
+    // =========================================================
+    // EVENT BUS (Observer Pattern) – Core of Event-Driven Design
+    // =========================================================
+    const EVENTS = {
+        INPUT: "input",               // external input: q, s, p, d, e
+        PRODUCT_CHOSEN: "productChosen",
+        STATE_CHANGED: "stateChanged", // model -> view
+        LOG: "log",                    // model -> view
+        RESET: "reset"                 // view -> model
+    };
+
+    class EventBus {
+        constructor() {
+            this.listeners = {};
+        }
+
+        on(eventType, handler) {
+            if (!this.listeners[eventType]) {
+                this.listeners[eventType] = [];
+            }
+            this.listeners[eventType].push(handler);
+        }
+
+        emit(eventType, payload) {
+            const handlers = this.listeners[eventType] || [];
+            for (const h of handlers) {
+                h(payload);
+            }
+        }
+    }
+
+    const bus = new EventBus();
+
+    // ===================== DOM HANDLES (VIEW) =================
+
+    const statePill = document.getElementById("statePill");
+    const currentStateSpan = document.getElementById("currentState");
+    const lastInputSpan = document.getElementById("lastInput");
+    const selectedProductSpan = document.getElementById("selectedProduct");
+    const selectedPriceSpan = document.getElementById("selectedPrice");
+    const logDiv = document.getElementById("log");
+    const mooreOutput = document.getElementById("mooreOutput");
+
+    const productSelect = document.getElementById("productSelect");
+    const productCards = document.querySelectorAll(".product-card");
+
+    const btnScanQR = document.getElementById("btnScanQR");
+    const btnSelectProduct = document.getElementById("btnSelectProduct");
+    const btnPay = document.getElementById("btnPay");
+    const btnDispense = document.getElementById("btnDispense");
+    const btnFinish = document.getElementById("btnFinish");
+    const btnClearLog = document.getElementById("btnClearLog");
+
+    // snapshot of current model state for the view
+    let currentSnapshot = {
+        stateName: "Idle",
+        selectedProduct: null,
+        selectedPrice: 0,
+        lastInput: "–",
+        mooreOutput: "Waiting for QR Scan"
+    };
+
+    // ===================== VIEW HELPERS =======================
+
+    function log(message) {
+        const timestamp = new Date().toLocaleTimeString();
+        logDiv.textContent += `[${timestamp}] ${message}\n`;
+        logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    function clearProductSelectionVisual() {
+        productCards.forEach((card) => card.classList.remove("selected"));
+        productSelect.value = "";
+    }
+
+    function getStateColorByName(name) {
+        switch (name) {
+            case "Idle":
+                return "#111827";
+            case "QRScanned":
+                return "#0369a1";
+            case "ProductSelected":
+                return "#0f766e";
+            case "PaymentProcessing":
+                return "#92400e";
+            case "DispensingItem":
+                return "#1d4ed8";
+            case "Completed":
+                return "#16a34a";
+            case "ErrorState":
+                return "#b91c1c";
+            default:
+                return "#111827";
+        }
+    }
+
+    function updateUIFromSnapshot(snapshot) {
+        currentSnapshot = snapshot;
+
+        const stateName = snapshot.stateName;
+        const lastInput = snapshot.lastInput;
+        const selectedProduct = snapshot.selectedProduct;
+        const selectedPrice = snapshot.selectedPrice;
+        const mooreText = snapshot.mooreOutput;
+
+        currentStateSpan.textContent = stateName;
+        lastInputSpan.textContent = lastInput;
+        statePill.style.backgroundColor = getStateColorByName(stateName);
+
+        selectedProductSpan.textContent = selectedProduct || "None";
+        selectedPriceSpan.textContent = selectedPrice.toFixed(2);
+
+        mooreOutput.textContent = mooreText;
+
+        // When we return to Idle, clear the product visual selection
+        if (stateName === "Idle") {
+            clearProductSelectionVisual();
+        }
+
+        // Enable/disable controls based on state
+        productSelect.disabled = stateName !== "QRScanned";
+
+        btnScanQR.disabled = stateName !== "Idle";
+        btnSelectProduct.disabled = stateName !== "QRScanned";
+        btnPay.disabled = stateName !== "ProductSelected";
+        btnDispense.disabled = stateName !== "PaymentProcessing";
+
+        btnFinish.disabled = !(
+            stateName === "DispensingItem" ||
+            stateName === "Completed" ||
+            stateName === "ErrorState"
+        );
+    }
+
+    // ===================== STATE PATTERN (MODEL) ==============
+
+    class State {
+        constructor(context) {
+            this.context = context;
+        }
+        name() {
+            return "State";
+        }
+        handle(inputSymbol) {
+            // Default: invalid → go to ErrorState
+            this.context.invalid(this, inputSymbol);
+        }
+        mooreOutput() {
+            return "";
+        }
+    }
+
+    class IdleState extends State {
+        name() {
+            return "Idle";
+        }
+        handle(inputSymbol) {
+            if (inputSymbol === "q") {
+                this.context.transition(this, new QRScannedState(this.context), inputSymbol);
+            } else {
+                this.context.invalid(this, inputSymbol);
+            }
+        }
+        mooreOutput() {
+            return "Waiting for QR Scan";
+        }
+    }
+
+    class QRScannedState extends State {
+        name() {
+            return "QRScanned";
+        }
+        handle(inputSymbol) {
+            if (inputSymbol === "s") {
+                this.context.transition(this, new ProductSelectedState(this.context), inputSymbol);
+            } else {
+                this.context.invalid(this, inputSymbol);
+            }
+        }
+        mooreOutput() {
+            return "QR scanned successfully. Please choose a product.";
+        }
+    }
+
+    class ProductSelectedState extends State {
+        name() {
+            return "ProductSelected";
+        }
+        handle(inputSymbol) {
+            if (inputSymbol === "p") {
+                this.context.transition(this, new PaymentProcessingState(this.context), inputSymbol);
+            } else {
+                this.context.invalid(this, inputSymbol);
+            }
+        }
+        mooreOutput() {
+            return "Product selected. Awaiting payment...";
+        }
+    }
+
+    class PaymentProcessingState extends State {
+        name() {
+            return "PaymentProcessing";
+        }
+        handle(inputSymbol) {
+            if (inputSymbol === "d") {
+                this.context.transition(this, new DispensingState(this.context), inputSymbol);
+            } else {
+                this.context.invalid(this, inputSymbol);
+            }
+        }
+        mooreOutput() {
+            return "Processing payment... Please wait.";
+        }
+    }
+
+    class DispensingState extends State {
+        name() {
+            return "DispensingItem";
+        }
+        handle(inputSymbol) {
+            if (inputSymbol === "e") {
+                this.context.transition(this, new CompletedState(this.context), inputSymbol);
+            } else {
+                this.context.invalid(this, inputSymbol);
+            }
+        }
+        mooreOutput() {
+            return "Dispensing your item...";
+        }
+    }
+
+    class CompletedState extends State {
+        name() {
+            return "Completed";
+        }
+        handle(inputSymbol) {
+            if (inputSymbol === "e") {
+                this.context.transition(this, new IdleState(this.context), inputSymbol);
+            } else {
+                this.context.invalid(this, inputSymbol);
+            }
+        }
+        mooreOutput() {
+            return "Transaction completed.";
+        }
+    }
+
+    class ErrorState extends State {
+        name() {
+            return "ErrorState";
+        }
+        handle(inputSymbol) {
+            if (inputSymbol === "e") {
+                this.context.transition(this, new IdleState(this.context), inputSymbol);
+            } else {
+                // stay in ErrorState but log info
+                this.context.bus.emit(EVENTS.LOG, `Input '${inputSymbol}' in 'ErrorState' is ignored. Press 'e' to reset.`);
+            }
+        }
+        mooreOutput() {
+            return "Invalid action. Please reset the machine.";
+        }
+    }
+
+    class VendingMachineModel {
+        constructor(bus) {
+            this.bus = bus;
+            this.selectedProduct = null;
+            this.selectedPrice = 0;
+            this.lastInput = "–";
+            this.state = new IdleState(this);
+
+            // Subscribe to external events (inputs, product choice, reset)
+            this.bus.on(EVENTS.INPUT, (symbol) => this.handleInput(symbol));
+            this.bus.on(EVENTS.PRODUCT_CHOSEN, ({ name, price }) => {
+                this.selectedProduct = name;
+                this.selectedPrice = price;
+                this.notifyStateChanged();
+            });
+            this.bus.on(EVENTS.RESET, () => this.reset());
+
+            // Initial notification
+            this.notifyStateChanged();
+            this.bus.emit(EVENTS.LOG, "System started in state 'Idle'.");
+        }
+
+        reset() {
+            this.selectedProduct = null;
+            this.selectedPrice = 0;
+            this.lastInput = "–";
+            this.state = new IdleState(this);
+            this.notifyStateChanged();
+            this.bus.emit(EVENTS.LOG, "System restarted and returned to state 'Idle'.");
+        }
+
+        setState(newState) {
+            this.state = newState;
+            if (this.state.name() === "Idle") {
+                this.selectedProduct = null;
+                this.selectedPrice = 0;
+            }
+            this.notifyStateChanged();
+        }
+
+        transition(currentState, nextState, inputSymbol) {
+            const from = currentState.name();
+            const to = nextState.name();
+            this.lastInput = inputSymbol;
+            this.bus.emit(EVENTS.LOG, `Input '${inputSymbol}' from '${from}' → '${to}'`);
+            this.setState(nextState);
+        }
+
+        invalid(currentState, inputSymbol) {
+            const from = currentState.name();
+            this.lastInput = inputSymbol;
+            this.bus.emit(EVENTS.LOG, `Input '${inputSymbol}' from '${from}' → INVALID → 'ErrorState'`);
+            this.setState(new ErrorState(this));
+        }
+
+        handleInput(inputSymbol) {
+            this.state.handle(inputSymbol);
+        }
+
+        getStateName() {
+            return this.state.name();
+        }
+
+        getMooreOutput() {
+            return this.state.mooreOutput();
+        }
+
+        notifyStateChanged() {
+            this.bus.emit(EVENTS.STATE_CHANGED, {
+                stateName: this.getStateName(),
+                selectedProduct: this.selectedProduct,
+                selectedPrice: this.selectedPrice,
+                lastInput: this.lastInput,
+                mooreOutput: this.getMooreOutput()
+            });
+        }
+    }
+
+    // ===================== MODEL INSTANCE =====================
+
+    const machine = new VendingMachineModel(bus);
+
+    // ===================== EVENT WIRING (VIEW <-> BUS) ========
+
+    // Model → View
+    bus.on(EVENTS.STATE_CHANGED, (snapshot) => {
+        updateUIFromSnapshot(snapshot);
+    });
+
+    bus.on(EVENTS.LOG, (message) => {
+        log(message);
+    });
+
+    // View → Model (user interactions)
+
+    // Product gallery
+    productCards.forEach((card) => {
+        card.addEventListener("click", () => {
+            if (currentSnapshot.stateName !== "QRScanned") {
+                alert("You must scan QR first.");
+                return;
+            }
+
+            // Visual selection
+            productCards.forEach((c) => c.classList.remove("selected"));
+            card.classList.add("selected");
+
+            const value = card.getAttribute("data-value");
+            const [name, price] = value.split("|");
+
+            productSelect.value = value;
+
+            bus.emit(EVENTS.PRODUCT_CHOSEN, {
+                name,
+                price: parseFloat(price)
+            });
+        });
+    });
+
+    // Buttons
+    btnScanQR.addEventListener("click", () => {
+        bus.emit(EVENTS.INPUT, "q");
+    });
+
+    btnSelectProduct.addEventListener("click", () => {
+        const value = productSelect.value;
+        if (!value) {
+            alert("Please select a product from the gallery or list first.");
+            return;
+        }
+        if (currentSnapshot.stateName !== "QRScanned") {
+            alert("You must scan QR first.");
+            return;
+        }
+        const [name, price] = value.split("|");
+
+        bus.emit(EVENTS.PRODUCT_CHOSEN, {
+            name,
+            price: parseFloat(price)
+        });
+
+        bus.emit(EVENTS.INPUT, "s");
+    });
+
+    btnPay.addEventListener("click", () => {
+        if (!currentSnapshot.selectedProduct) {
+            alert("No product has been selected.");
+            return;
+        }
+        if (currentSnapshot.stateName !== "ProductSelected") {
+            alert("You must select a product first.");
+            return;
+        }
+        bus.emit(EVENTS.INPUT, "p");
+    });
+
+    btnDispense.addEventListener("click", () => {
+        bus.emit(EVENTS.INPUT, "d");
+    });
+
+    btnFinish.addEventListener("click", () => {
+        bus.emit(EVENTS.INPUT, "e");
+    });
+
+    btnClearLog.addEventListener("click", () => {
+        logDiv.textContent = "";
+        clearProductSelectionVisual();
+        bus.emit(EVENTS.RESET);
+    });
+
+    // Keyboard shortcuts: q, s, p, d, e
+    document.addEventListener("keydown", (event) => {
+        const key = event.key.toLowerCase();
+        if (key === "q" && !btnScanQR.disabled) btnScanQR.click();
+        if (key === "s" && !btnSelectProduct.disabled) btnSelectProduct.click();
+        if (key === "p" && !btnPay.disabled) btnPay.click();
+        if (key === "d" && !btnDispense.disabled) btnDispense.click();
+        if (key === "e" && !btnFinish.disabled) btnFinish.click();
+    });
+
+    // Initial UI render from existing snapshot
+    updateUIFromSnapshot(currentSnapshot);
+</script>
+</body>
+</html>
